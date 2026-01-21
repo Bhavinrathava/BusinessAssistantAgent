@@ -1,8 +1,10 @@
 import anthropic
-
+import streamlit as st
 import os
 
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+# Try st.secrets first (Streamlit Cloud), fall back to os.getenv (local)
+api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+client = anthropic.Anthropic(api_key=api_key)
 
 TOOLS = [
     {

@@ -1,5 +1,6 @@
 import chromadb
 import logging
+import streamlit as st
 import os
 
 logging.basicConfig(level=logging.INFO)
@@ -23,10 +24,19 @@ class ChromaDB:
 
     def initialize_client(self):
 
+        # Try st.secrets first (Streamlit Cloud), fall back to os.getenv (local)
+        api_key = st.secrets.get("CHROMA_API_KEY") or os.getenv(
+            "CHROMA_API_KEY"
+        )
+        tenant_id = st.secrets.get("CHROMA_TENANT_ID") or os.getenv(
+            "CHROMA_TENANT_ID"
+        )
+        database = st.secrets.get("CHROMA_DB") or os.getenv("CHROMA_DB")
+
         self.client = chromadb.CloudClient(
-            api_key=os.environ.get("CHROMA_API_KEY"),
-            tenant=os.environ.get("CHROMA_TENANT_ID"),
-            database=os.environ.get("CHROMA_DB"),
+            api_key=api_key,
+            tenant=tenant_id,
+            database=database,
         )
         logging.info("Client initialized")
 

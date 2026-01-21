@@ -3,9 +3,12 @@ import anthropic
 import json
 from datetime import datetime, timedelta
 import re
+import streamlit as st
 
 # Initialize Anthropic client
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+# Try st.secrets first (Streamlit Cloud), fall back to os.getenv (local)
+api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+client = anthropic.Anthropic(api_key=api_key)
 
 # Mock data - you'll replace with real integrations later
 MOCK_CALENDAR = {
