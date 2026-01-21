@@ -5,9 +5,51 @@ from constants import *
 
 load_dotenv()
 
+# Configure page with PT branding
+st.set_page_config(
+    page_title="Bridgeport Physical Wellness",
+    page_icon="💪",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-st.set_page_config(page_title="Claude Chat", page_icon="💬")
-st.title("💬 Claude Chat")
+# Custom theme styling
+st.markdown("""
+    <style>
+    .main-title {
+        color: #1e40af;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    .subtitle {
+        color: #64748b;
+        text-align: center;
+        font-size: 16px;
+        margin-bottom: 30px;
+    }
+    .footer {
+        text-align: center;
+        padding: 20px;
+        margin-top: 50px;
+        border-top: 2px solid #e2e8f0;
+        color: #64748b;
+        font-size: 14px;
+    }
+    .footer-link {
+        color: #1e40af;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .footer-link:hover {
+        text-decoration: underline;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Header with PT branding
+st.markdown('<h1 class="main-title">💪 Bridgeport Physical Wellness</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">Your Personal Physical Therapy Assistant</p>', unsafe_allow_html=True)
+st.divider()
 
 # Initialize state
 # api_messages: clean messages for API (only role + content)
@@ -22,12 +64,11 @@ if "ui_messages" not in st.session_state:
 for message in st.session_state.ui_messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-        # Show calendly embed if this message triggered it
+        # Show booking link if this message triggered it
         if message.get("show_calendly"):
-            st.components.v1.iframe(
-                f"{CALENDLY_URL}?embed_type=Inline",
-                height=700,
-                scrolling=True,
+            st.markdown(
+                f"[📅 Book an Appointment]({CALENDLY_URL})",
+                unsafe_allow_html=False,
             )
 
 # Chat input
@@ -48,12 +89,11 @@ if prompt := st.chat_input("Message Claude..."):
 
             st.markdown(assistant_message)
 
-            # Show Calendly widget if Claude triggered it
+            # Show booking link if Claude triggered it
             if show_calendly:
-                st.components.v1.iframe(
-                    f"{CALENDLY_URL}?embed_type=Inline",
-                    height=700,
-                    scrolling=True,
+                st.markdown(
+                    f"[📅 Book an Appointment]({CALENDLY_URL})",
+                    unsafe_allow_html=False,
                 )
 
     # Add assistant response to both lists
@@ -67,3 +107,25 @@ if prompt := st.chat_input("Message Claude..."):
             "show_calendly": show_calendly,
         }
     )
+
+# Sidebar with clinic information
+with st.sidebar:
+    st.header("📋 Clinic Info")
+    
+    with st.expander("📍 Location", expanded=False):
+        st.markdown(
+            '[View on Google Maps](https://maps.app.goo.gl/Hi9anpbAxdsNt3ej9)',
+            unsafe_allow_html=False
+        )
+        st.caption("Bridgeport Physical Wellness")
+    
+    with st.expander("📞 Contact", expanded=False):
+        st.markdown("[+1 (312) 298-9867](tel:+13122989867)")
+        st.caption("Call us for more information")
+    
+    with st.expander("🔗 Book Appointment", expanded=False):
+        st.markdown(
+            f'[Schedule Now]({CALENDLY_URL})',
+            unsafe_allow_html=False
+        )
+        st.caption("Book your session online")
