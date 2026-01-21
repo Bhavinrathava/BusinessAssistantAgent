@@ -10,11 +10,12 @@ st.set_page_config(
     page_title="Bridgeport Physical Wellness",
     page_icon="💪",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # Custom theme styling
-st.markdown("""
+st.markdown(
+    """
     <style>
     .main-title {
         color: #1e40af;
@@ -44,11 +45,19 @@ st.markdown("""
         text-decoration: underline;
     }
     </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # Header with PT branding
-st.markdown('<h1 class="main-title">💪 Bridgeport Physical Wellness</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">Your Personal Physical Therapy Assistant</p>', unsafe_allow_html=True)
+st.markdown(
+    '<h1 class="main-title">💪 Bridgeport Physical Wellness</h1>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<p class="subtitle">Your Personal Physical Therapy Assistant</p>',
+    unsafe_allow_html=True,
+)
 st.divider()
 
 # Initialize state
@@ -111,21 +120,18 @@ if prompt := st.chat_input("Message Claude..."):
 # Sidebar with clinic information
 with st.sidebar:
     st.header("📋 Clinic Info")
-    
+
     with st.expander("📍 Location", expanded=False):
         st.markdown(
-            '[View on Google Maps](https://maps.app.goo.gl/Hi9anpbAxdsNt3ej9)',
-            unsafe_allow_html=False
+            "[View on Google Maps](https://maps.app.goo.gl/Hi9anpbAxdsNt3ej9)",
+            unsafe_allow_html=False,
         )
         st.caption("Bridgeport Physical Wellness")
-    
+
     with st.expander("📞 Contact", expanded=False):
         st.markdown("[+1 (312) 298-9867](tel:+13122989867)")
         st.caption("Call us for more information")
-    
+
     with st.expander("🔗 Book Appointment", expanded=False):
-        st.markdown(
-            f'[Schedule Now]({CALENDLY_URL})',
-            unsafe_allow_html=False
-        )
+        st.markdown(f"[Schedule Now]({CALENDLY_URL})", unsafe_allow_html=False)
         st.caption("Book your session online")
