@@ -151,3 +151,34 @@ def delete_session_messages(session_id: str):
         logger.info(f"Successfully deleted messages for session: {session_id}")
     except Exception as e:
         logger.error(f"Error deleting session messages for {session_id}: {e}")
+
+
+def save_api_call(
+    input_tokens: int,
+    output_tokens: int,
+    tool_used: str = None,
+    session_id: str = None,
+):
+    """Log a Claude API call to the Supabase database.
+
+    Args:
+        input_tokens: Number of input tokens used
+        output_tokens: Number of output tokens generated
+        tool_used: Name of tool used (if any)
+        session_id: UUID for the chat dialog session
+    """
+    client = get_db_connection()
+
+    try:
+        logger.info(f"Logging API call - input: {input_tokens}, output: {output_tokens}, tool: {tool_used}")
+        client.table("api_calls").insert(
+            {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "tool_used": tool_used,
+                "session_id": session_id,
+            }
+        ).execute()
+        logger.info("Successfully logged API call")
+    except Exception as e:
+        logger.error(f"Error logging API call: {e}")

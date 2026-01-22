@@ -1,6 +1,7 @@
 import anthropic
 import streamlit as st
 import os
+from utils.db_manager import save_api_call
 
 # Try st.secrets first (Streamlit Cloud), fall back to os.getenv (local)
 api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
@@ -57,7 +58,7 @@ IMPORTANT RULES:
 Be conversational, helpful, and focused on patient care."""
 
 
-def get_response(messages: list[dict]) -> dict:
+def get_response(messages: list[dict], session_id: str = None) -> dict:
     """Send messages to Claude and return response with optional tool calls."""
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
@@ -71,15 +72,18 @@ def get_response(messages: list[dict]) -> dict:
     show_calendly = False
     query_kb = False
     text_response = ""
+    tool_used = None
 
     for block in response.content:
         if block.type == "tool_use" and block.name == "show_calendly":
             show_calendly = True
+            tool_used = "show_calendly"
         elif (
             block.type == "tool_use"
             and block.name == "get_information_about_me"
         ):
             query_kb = True
+            tool_used = "get_information_about_me"
             # Execute the KB query and send result back to Claude
             tool_id = block.id
             query = block.input.get("query", "")
@@ -100,6 +104,14 @@ def get_response(messages: list[dict]) -> dict:
                 }
             )
 
+            # Log the first API call (with tool use)
+            save_api_call(
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                tool_used=tool_used,
+                session_id=session_id,
+            )
+
             # Get Claude's final response with the KB information
             final_response = client.messages.create(
                 model="claude-sonnet-4-20250514",
@@ -109,13 +121,35 @@ def get_response(messages: list[dict]) -> dict:
                 messages=messages,
             )
 
+            # Log the follow-up API call
+            save_api_call(
+                input_tokens=final_response.usage.input_tokens,
+                output_tokens=final_response.usage.output_tokens,
+                tool_used=None,
+                session_id=session_id,
+            )
+
             # Extract text from final response
             for final_block in final_response.content:
                 if final_block.type == "text":
                     text_response = final_block.text
                     break
+
+            return {
+                "text": text_response,
+                "show_calendly": show_calendly,
+                "query_kb": query_kb,
+            }
         elif block.type == "text":
             text_response = block.text
+
+    # Log API call for non-KB responses
+    save_api_call(
+        input_tokens=response.usage.input_tokens,
+        output_tokens=response.usage.output_tokens,
+        tool_used=tool_used,
+        session_id=session_id,
+    )
 
     return {
         "text": text_response,
