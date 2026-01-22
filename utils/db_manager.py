@@ -1,7 +1,12 @@
 import uuid
+import logging
 from datetime import datetime
 import streamlit as st
 from supabase import create_client, Client
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Database connection parameters from Streamlit secrets
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -36,6 +41,7 @@ def save_message_to_db(
     timestamp = datetime.now().isoformat()
 
     try:
+        logger.info(f"Inserting message - role: {role}, session_id: {session_id}, message_id: {message_id}")
         client.table("messages").insert(
             {
                 "message_id": message_id,
@@ -46,8 +52,9 @@ def save_message_to_db(
                 "created_at": timestamp,
             }
         ).execute()
+        logger.info(f"Successfully saved message - message_id: {message_id}")
     except Exception as e:
-        print(f"Error saving message to database: {e}")
+        logger.error(f"Error saving message to database: {e}")
 
 
 def get_messages_by_session(session_id: str):
@@ -62,6 +69,7 @@ def get_messages_by_session(session_id: str):
     client = get_db_connection()
 
     try:
+        logger.info(f"Fetching messages for session: {session_id}")
         response = (
             client.table("messages")
             .select("*")
@@ -70,9 +78,11 @@ def get_messages_by_session(session_id: str):
             .execute()
         )
 
+        message_count = len(response.data) if response.data else 0
+        logger.info(f"Retrieved {message_count} messages for session: {session_id}")
         return response.data if response.data else []
     except Exception as e:
-        print(f"Error retrieving messages: {e}")
+        logger.error(f"Error retrieving messages for session {session_id}: {e}")
         return []
 
 
@@ -88,6 +98,7 @@ def get_all_messages(limit: int = 1000):
     client = get_db_connection()
 
     try:
+        logger.info(f"Fetching all messages with limit: {limit}")
         response = (
             client.table("messages")
             .select("*")
@@ -96,9 +107,11 @@ def get_all_messages(limit: int = 1000):
             .execute()
         )
 
+        message_count = len(response.data) if response.data else 0
+        logger.info(f"Retrieved {message_count} total messages")
         return response.data if response.data else []
     except Exception as e:
-        print(f"Error retrieving all messages: {e}")
+        logger.error(f"Error retrieving all messages: {e}")
         return []
 
 
@@ -111,13 +124,16 @@ def get_session_count():
     client = get_db_connection()
 
     try:
+        logger.info("Fetching session count")
         response = client.table("messages").select("*").execute()
 
         # Count unique session IDs
         unique_sessions = set(msg["session_id"] for msg in response.data)
-        return len(unique_sessions)
+        session_count = len(unique_sessions)
+        logger.info(f"Found {session_count} unique chat sessions")
+        return session_count
     except Exception as e:
-        print(f"Error getting session count: {e}")
+        logger.error(f"Error getting session count: {e}")
         return 0
 
 
@@ -130,6 +146,8 @@ def delete_session_messages(session_id: str):
     client = get_db_connection()
 
     try:
+        logger.info(f"Deleting all messages for session: {session_id}")
         client.table("messages").delete().eq("session_id", session_id).execute()
+        logger.info(f"Successfully deleted messages for session: {session_id}")
     except Exception as e:
-        print(f"Error deleting session messages: {e}")
+        logger.error(f"Error deleting session messages for {session_id}: {e}")
