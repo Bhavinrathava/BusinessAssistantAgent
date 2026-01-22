@@ -2,6 +2,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
+import uuid
 
 # History file path
 HISTORY_FILE = Path("data/message_history.json")
@@ -14,24 +15,28 @@ def _ensure_history_file():
         HISTORY_FILE.write_text(json.dumps([]))
 
 
-def save_message(role: str, content: str, show_calendly: bool = False):
+def save_message(
+    role: str, content: str, show_calendly: bool = False, session_id: str = None
+):
     """Save a message to the history file.
 
     Args:
         role: "user" or "assistant"
         content: The message content
         show_calendly: Whether a calendly link was shown (for assistant messages)
+        session_id: UUID for the chat dialog session
     """
     _ensure_history_file()
 
     # Load existing history
     history = json.loads(HISTORY_FILE.read_text())
 
-    # Create message entry with timestamp
+    # Create message entry with timestamp and session_id
     message = {
         "role": role,
         "content": content,
         "timestamp": datetime.now().isoformat(),
+        "session_id": session_id or str(uuid.uuid4()),
     }
 
     # Add show_calendly flag only for assistant messages

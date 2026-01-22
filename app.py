@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from utils.chat import get_response
 from utils.message_history import save_message
 from constants import *
+import uuid
 
 load_dotenv()
 
@@ -70,6 +71,10 @@ if "api_messages" not in st.session_state:
 if "ui_messages" not in st.session_state:
     st.session_state.ui_messages = []
 
+# Generate unique chat session ID
+if "chat_session_id" not in st.session_state:
+    st.session_state.chat_session_id = str(uuid.uuid4())
+
 # Display chat history
 for message in st.session_state.ui_messages:
     with st.chat_message(message["role"]):
@@ -86,9 +91,9 @@ if prompt := st.chat_input("Message Claude..."):
     # Add user message to both lists
     st.session_state.api_messages.append({"role": "user", "content": prompt})
     st.session_state.ui_messages.append({"role": "user", "content": prompt})
-    
-    # Save user message to persistent history
-    save_message("user", prompt)
+
+    # Save user message to persistent history with session ID
+    save_message("user", prompt, session_id=st.session_state.chat_session_id)
 
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -120,9 +125,14 @@ if prompt := st.chat_input("Message Claude..."):
             "show_calendly": show_calendly,
         }
     )
-    
+
     # Save assistant message to persistent history
-    save_message("assistant", assistant_message, show_calendly)
+    save_message(
+        "assistant",
+        assistant_message,
+        show_calendly,
+        session_id=st.session_state.chat_session_id,
+    )
 
 # Sidebar with clinic information
 with st.sidebar:
@@ -142,7 +152,3 @@ with st.sidebar:
     with st.expander("🔗 Book Appointment", expanded=False):
         st.markdown(f"[Schedule Now]({CALENDLY_URL})", unsafe_allow_html=False)
         st.caption("Book your session online")
-    
-    st.divider()
-    st.header("🗂️ Chat History")
-    st.caption("Messages are being saved to data/message_history.json")
