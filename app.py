@@ -116,13 +116,13 @@ if prompt := st.chat_input("Message Claude..."):
     st.session_state.ui_messages.append(
         {
             "role": "assistant",
-     
-    
-    # Save assistant message to persistent history
-    save_message("assistant", assistant_message, show_calendly)       "content": assistant_message,
+            "content": assistant_message,
             "show_calendly": show_calendly,
         }
     )
+    
+    # Save assistant message to persistent history
+    save_message("assistant", assistant_message, show_calendly)
 
 # Sidebar with clinic information
 with st.sidebar:
