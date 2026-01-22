@@ -1,6 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
 from utils.chat import get_response
+from utils.message_history import save_message
 from constants import *
 
 load_dotenv()
@@ -85,6 +86,9 @@ if prompt := st.chat_input("Message Claude..."):
     # Add user message to both lists
     st.session_state.api_messages.append({"role": "user", "content": prompt})
     st.session_state.ui_messages.append({"role": "user", "content": prompt})
+    
+    # Save user message to persistent history
+    save_message("user", prompt)
 
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -112,7 +116,10 @@ if prompt := st.chat_input("Message Claude..."):
     st.session_state.ui_messages.append(
         {
             "role": "assistant",
-            "content": assistant_message,
+     
+    
+    # Save assistant message to persistent history
+    save_message("assistant", assistant_message, show_calendly)       "content": assistant_message,
             "show_calendly": show_calendly,
         }
     )
@@ -135,3 +142,7 @@ with st.sidebar:
     with st.expander("🔗 Book Appointment", expanded=False):
         st.markdown(f"[Schedule Now]({CALENDLY_URL})", unsafe_allow_html=False)
         st.caption("Book your session online")
+    
+    st.divider()
+    st.header("🗂️ Chat History")
+    st.caption("Messages are being saved to data/message_history.json")
