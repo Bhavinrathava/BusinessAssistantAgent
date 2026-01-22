@@ -111,7 +111,7 @@ if prompt := st.chat_input("Message Claude..."):
     # Get response from Claude
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = get_response(st.session_state.api_messages)
+            response = get_response(st.session_state.api_messages, session_id=st.session_state.chat_session_id)
             assistant_message = response["text"]
             show_calendly = response["show_calendly"]
 

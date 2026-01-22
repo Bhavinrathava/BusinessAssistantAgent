@@ -168,15 +168,17 @@ def save_api_call(
         session_id: UUID for the chat dialog session
     """
     client = get_db_connection()
+    timestamp = datetime.now().isoformat()
 
     try:
-        logger.info(f"Logging API call - input: {input_tokens}, output: {output_tokens}, tool: {tool_used}")
+        logger.info(f"Logging API call - input: {input_tokens}, output: {output_tokens}, tool: {tool_used}, session: {session_id}")
         client.table("api_calls").insert(
             {
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "tool_used": tool_used,
                 "session_id": session_id,
+                "timestamp": timestamp,
             }
         ).execute()
         logger.info("Successfully logged API call")
@@ -243,7 +245,7 @@ def get_all_api_calls():
 
     try:
         logger.info("Fetching all API calls")
-        response = client.table("api_calls").select("*").order("created_at", desc=True).execute()
+        response = client.table("api_calls").select("*").order("timestamp", desc=True).execute()
 
         call_count = len(response.data) if response.data else 0
         logger.info(f"Retrieved {call_count} API calls")
@@ -270,7 +272,7 @@ def get_api_calls_by_session(session_id: str):
             client.table("api_calls")
             .select("*")
             .eq("session_id", session_id)
-            .order("created_at", desc=False)
+            .order("timestamp", desc=False)
             .execute()
         )
 

@@ -172,8 +172,8 @@ elif page == "Token Usage Metrics":
             df["output_tokens"] = 0
         if "tool_used" not in df.columns:
             df["tool_used"] = None
-        if "created_at" not in df.columns:
-            df["created_at"] = None
+        if "timestamp" not in df.columns:
+            df["timestamp"] = None
 
         # Fill NaN values
         df["input_tokens"] = df["input_tokens"].fillna(0).astype(int)
@@ -211,8 +211,8 @@ elif page == "Token Usage Metrics":
 
         # Token usage over time
         st.subheader("Token Usage Over Time")
-        if df["created_at"].notna().any():
-            df["date"] = pd.to_datetime(df["created_at"]).dt.date
+        if df["timestamp"].notna().any():
+            df["date"] = pd.to_datetime(df["timestamp"]).dt.date
             daily_usage = df.groupby("date").agg({
                 "input_tokens": "sum",
                 "output_tokens": "sum",
@@ -303,6 +303,6 @@ elif page == "Token Usage Metrics":
         st.subheader("Raw API Call Data")
         with st.expander("View raw data"):
             display_df = df.copy()
-            if "created_at" in display_df.columns:
-                display_df = display_df.sort_values("created_at", ascending=False)
+            if "timestamp" in display_df.columns:
+                display_df = display_df.sort_values("timestamp", ascending=False)
             st.dataframe(display_df, use_container_width=True, hide_index=True)
