@@ -1,11 +1,19 @@
 import streamlit as st
 from dotenv import load_dotenv
 from utils.chat import get_response
-from utils.message_history import save_message
+from utils.db_manager import save_message_to_db, initialize_database
 from constants import *
 import uuid
 
 load_dotenv()
+
+# Initialize database on startup
+try:
+    initialize_database()
+except Exception as e:
+    st.warning(
+        f"Could not connect to database: {e}. Messages will not be saved."
+    )
 
 # Configure page with PT branding
 st.set_page_config(
@@ -92,8 +100,10 @@ if prompt := st.chat_input("Message Claude..."):
     st.session_state.api_messages.append({"role": "user", "content": prompt})
     st.session_state.ui_messages.append({"role": "user", "content": prompt})
 
-    # Save user message to persistent history with session ID
-    save_message("user", prompt, session_id=st.session_state.chat_session_id)
+    # Save user message to PostgreSQL database
+    save_message_to_db(
+        "user", prompt, session_id=st.session_state.chat_session_id
+    )
 
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -126,8 +136,8 @@ if prompt := st.chat_input("Message Claude..."):
         }
     )
 
-    # Save assistant message to persistent history
-    save_message(
+    # Save assistant message to PostgreSQL database
+    save_message_to_db(
         "assistant",
         assistant_message,
         show_calendly,
