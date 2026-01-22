@@ -182,3 +182,101 @@ def save_api_call(
         logger.info("Successfully logged API call")
     except Exception as e:
         logger.error(f"Error logging API call: {e}")
+
+
+def get_all_sessions():
+    """Get all unique sessions with metadata.
+
+    Returns:
+        List of dictionaries with session_id, message_count, first_message_time, last_message_time
+    """
+    client = get_db_connection()
+
+    try:
+        logger.info("Fetching all sessions")
+        response = client.table("messages").select("*").order("created_at", desc=False).execute()
+
+        if not response.data:
+            return []
+
+        # Group messages by session
+        sessions = {}
+        for msg in response.data:
+            sid = msg["session_id"]
+            if sid not in sessions:
+                sessions[sid] = {
+                    "session_id": sid,
+                    "messages": [],
+                    "first_message_time": msg["created_at"],
+                    "last_message_time": msg["created_at"],
+                }
+            sessions[sid]["messages"].append(msg)
+            sessions[sid]["last_message_time"] = msg["created_at"]
+
+        # Convert to list with metadata
+        result = []
+        for sid, data in sessions.items():
+            result.append({
+                "session_id": sid,
+                "message_count": len(data["messages"]),
+                "first_message_time": data["first_message_time"],
+                "last_message_time": data["last_message_time"],
+                "messages": data["messages"],
+            })
+
+        # Sort by last message time (most recent first)
+        result.sort(key=lambda x: x["last_message_time"], reverse=True)
+        logger.info(f"Found {len(result)} sessions")
+        return result
+    except Exception as e:
+        logger.error(f"Error fetching sessions: {e}")
+        return []
+
+
+def get_all_api_calls():
+    """Get all API call records for metrics.
+
+    Returns:
+        List of API call dictionaries
+    """
+    client = get_db_connection()
+
+    try:
+        logger.info("Fetching all API calls")
+        response = client.table("api_calls").select("*").order("created_at", desc=True).execute()
+
+        call_count = len(response.data) if response.data else 0
+        logger.info(f"Retrieved {call_count} API calls")
+        return response.data if response.data else []
+    except Exception as e:
+        logger.error(f"Error fetching API calls: {e}")
+        return []
+
+
+def get_api_calls_by_session(session_id: str):
+    """Get API calls for a specific session.
+
+    Args:
+        session_id: UUID of the chat session
+
+    Returns:
+        List of API call dictionaries
+    """
+    client = get_db_connection()
+
+    try:
+        logger.info(f"Fetching API calls for session: {session_id}")
+        response = (
+            client.table("api_calls")
+            .select("*")
+            .eq("session_id", session_id)
+            .order("created_at", desc=False)
+            .execute()
+        )
+
+        call_count = len(response.data) if response.data else 0
+        logger.info(f"Retrieved {call_count} API calls for session: {session_id}")
+        return response.data if response.data else []
+    except Exception as e:
+        logger.error(f"Error fetching API calls for session {session_id}: {e}")
+        return []

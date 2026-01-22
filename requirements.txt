@@ -4,3 +4,4 @@ python-dotenv>=1.0.0
 chromadb>=0.4.0
 psycopg2-binary>=2.9.0
 supabase
+pandas>=2.0.0
