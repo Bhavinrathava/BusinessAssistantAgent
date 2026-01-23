@@ -64,6 +64,30 @@ class ChromaDB:
 
         logging.info("Document added to knowledge base")
 
+    def get_all_documents(self):
+        """Retrieve all documents from the collection."""
+        results = self.collection.get()
+        if not results or "ids" not in results:
+            return []
+
+        documents = []
+        for i, doc_id in enumerate(results["ids"]):
+            doc_content = results["documents"][i] if results["documents"] else ""
+            documents.append({"id": doc_id, "content": doc_content})
+
+        return documents
+
+    def delete_document(self, doc_id):
+        """Delete a document from the collection by its ID."""
+        self.collection.delete(ids=[doc_id])
+        logging.info(f"Document '{doc_id}' deleted from knowledge base")
+
+    def update_document(self, doc_id, new_content):
+        """Update a document by deleting the old one and adding the new content."""
+        self.delete_document(doc_id)
+        self.add_to_knowledge_base(new_content, doc_id)
+        logging.info(f"Document '{doc_id}' updated in knowledge base")
+
     def add_to_knowledge_base_from_directory(self, directory_path):
         file_paths = [
             os.path.join(directory_path, file)

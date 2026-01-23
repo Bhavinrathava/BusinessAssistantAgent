@@ -7,6 +7,7 @@ from utils.db_manager import (
     get_messages_by_session,
     get_api_calls_by_session,
 )
+from utils.chroma_db import ChromaDB
 
 st.set_page_config(
     page_title="Management Dashboard",
@@ -19,7 +20,7 @@ st.title("📊 Management Dashboard")
 # Sidebar navigation
 page = st.sidebar.radio(
     "Navigation",
-    ["Conversations", "Token Usage Metrics"],
+    ["Conversations", "Token Usage Metrics", "Edit Details"],
     index=0,
 )
 
@@ -306,3 +307,154 @@ elif page == "Token Usage Metrics":
             if "timestamp" in display_df.columns:
                 display_df = display_df.sort_values("timestamp", ascending=False)
             st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+# -----------------------------------------------------------------------------
+# Edit Details Page
+# -----------------------------------------------------------------------------
+elif page == "Edit Details":
+    st.header("📝 Knowledge Base Management")
+
+    # Initialize ChromaDB
+    @st.cache_resource
+    def get_chroma_db():
+        return ChromaDB()
+
+    chroma_db = get_chroma_db()
+
+    # Create tabs for different operations
+    tab1, tab2 = st.tabs(["Manage Documents", "Add New Document"])
+
+    # -------------------------------------------------------------------------
+    # Tab 1: Manage Existing Documents
+    # -------------------------------------------------------------------------
+    with tab1:
+        st.subheader("Existing Documents")
+
+        # Refresh button
+        if st.button("🔄 Refresh Documents", key="refresh_docs"):
+            st.cache_resource.clear()
+            st.rerun()
+
+        # Get all documents
+        documents = chroma_db.get_all_documents()
+
+        if not documents:
+            st.info("No documents found in the knowledge base.")
+        else:
+            st.write(f"**Total Documents:** {len(documents)}")
+            st.divider()
+
+            # Display each document with edit/delete options
+            for doc in documents:
+                doc_id = doc["id"]
+                doc_content = doc["content"]
+
+                with st.expander(f"📄 {doc_id}", expanded=False):
+                    st.caption(f"Document ID: `{doc_id}`")
+
+                    # Use session state to track edit mode
+                    edit_key = f"edit_mode_{doc_id}"
+                    if edit_key not in st.session_state:
+                        st.session_state[edit_key] = False
+
+                    if st.session_state[edit_key]:
+                        # Edit mode
+                        new_content = st.text_area(
+                            "Edit content:",
+                            value=doc_content,
+                            height=300,
+                            key=f"edit_content_{doc_id}",
+                        )
+
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("💾 Save Changes", key=f"save_{doc_id}"):
+                                if new_content.strip():
+                                    chroma_db.update_document(doc_id, new_content)
+                                    st.session_state[edit_key] = False
+                                    st.success(f"Document '{doc_id}' updated successfully!")
+                                    st.cache_resource.clear()
+                                    st.rerun()
+                                else:
+                                    st.error("Document content cannot be empty.")
+                        with col2:
+                            if st.button("❌ Cancel", key=f"cancel_{doc_id}"):
+                                st.session_state[edit_key] = False
+                                st.rerun()
+                    else:
+                        # View mode
+                        st.text_area(
+                            "Content:",
+                            value=doc_content,
+                            height=200,
+                            disabled=True,
+                            key=f"view_content_{doc_id}",
+                        )
+
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("✏️ Edit", key=f"edit_btn_{doc_id}"):
+                                st.session_state[edit_key] = True
+                                st.rerun()
+                        with col2:
+                            if st.button("🗑️ Delete", key=f"delete_btn_{doc_id}"):
+                                st.session_state[f"confirm_delete_{doc_id}"] = True
+
+                        # Confirm delete dialog
+                        if st.session_state.get(f"confirm_delete_{doc_id}", False):
+                            st.warning(f"Are you sure you want to delete '{doc_id}'?")
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Yes, Delete", key=f"confirm_del_{doc_id}"):
+                                    chroma_db.delete_document(doc_id)
+                                    st.session_state[f"confirm_delete_{doc_id}"] = False
+                                    st.success(f"Document '{doc_id}' deleted successfully!")
+                                    st.cache_resource.clear()
+                                    st.rerun()
+                            with col2:
+                                if st.button("No, Cancel", key=f"cancel_del_{doc_id}"):
+                                    st.session_state[f"confirm_delete_{doc_id}"] = False
+                                    st.rerun()
+
+    # -------------------------------------------------------------------------
+    # Tab 2: Add New Document
+    # -------------------------------------------------------------------------
+    with tab2:
+        st.subheader("Add New Document")
+
+        # Document ID input
+        new_doc_id = st.text_input(
+            "Document ID",
+            placeholder="e.g., services.txt, faq.txt",
+            help="A unique identifier for this document. Use descriptive names.",
+        )
+
+        # Document content input
+        new_doc_content = st.text_area(
+            "Document Content",
+            placeholder="Enter the document content here...",
+            height=300,
+            help="The text content that will be added to the knowledge base.",
+        )
+
+        # Add button
+        if st.button("➕ Add Document", type="primary"):
+            if not new_doc_id.strip():
+                st.error("Please provide a document ID.")
+            elif not new_doc_content.strip():
+                st.error("Please provide document content.")
+            else:
+                # Check if document already exists
+                existing_docs = chroma_db.get_all_documents()
+                existing_ids = [d["id"] for d in existing_docs]
+
+                if new_doc_id in existing_ids:
+                    st.error(
+                        f"Document with ID '{new_doc_id}' already exists. "
+                        "Use the 'Manage Documents' tab to edit it."
+                    )
+                else:
+                    chroma_db.add_to_knowledge_base(new_doc_content, new_doc_id)
+                    st.success(f"Document '{new_doc_id}' added successfully!")
+                    st.cache_resource.clear()
+                    st.rerun()
